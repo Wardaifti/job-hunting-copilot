@@ -1,0 +1,11 @@
+command: ['python', 'app.py']
+
+env:
+  - name: 'LAKEBASE_SECRET_SCOPE'
+    value: 'database'
+  - name: 'LAKEBASE_SECRET_KEY'
+    value: 'lakebase-url-capstone'
+  - name: 'EMBEDDING_ENDPOINT'
+    value: 'databricks-gte-large-en'
+  - name: 'CHAT_ENDPOINT'
+    value: 'databricks-meta-llama-3-3-70b-instruct'
