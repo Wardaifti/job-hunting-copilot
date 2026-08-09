@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Job Copilot{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="shell">
+    <nav class="nav">
+      <div class="brand">Copilot</div>
+      <div class="brand-sub">Job Hunting Agent</div>
+      <a href="{{ url_for('home') }}" class="{{ 'active' if request.path == '/' else '' }}">Chat</a>
+      <a href="{{ url_for('pipeline') }}" class="{{ 'active' if request.path.startswith('/pipeline') else '' }}">Pipeline</a>
+      <a href="{{ url_for('profile') }}" class="{{ 'active' if request.path.startswith('/profile') else '' }}">Profile</a>
+    </nav>
+    <main class="main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

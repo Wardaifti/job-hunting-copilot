@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Profile — Job Copilot{% endblock %}
+{% block content %}
+  <div class="page-eyebrow">Profile</div>
+  <h1>Tell the agent about you</h1>
+  <p style="color:var(--slate); margin-top:0;">This is what search, matching, and drafting all run against.</p>
+
+  <form method="POST" id="profileForm">
+    <label for="headline">Headline</label>
+    <input type="text" id="headline" name="headline" value="{{ profile.headline or '' }}" placeholder="e.g. Backend engineer, 4 yrs, Python/Go">
+
+    <label for="summary">Summary</label>
+    <textarea id="summary" name="summary" placeholder="A few sentences on your background — this gets used for drafting cover letters and bullets.">{{ profile.summary or '' }}</textarea>
+
+    <label for="target_roles">Target roles (comma-separated)</label>
+    <input type="text" id="target_roles" name="target_roles"
+           value="{{ profile.target_roles|join(', ') if profile.target_roles else '' }}"
+           placeholder="Backend Engineer, Platform Engineer">
+
+    <label for="target_locations">Target locations (comma-separated)</label>
+    <input type="text" id="target_locations" name="target_locations"
+           value="{{ profile.target_locations|join(', ') if profile.target_locations else '' }}"
+           placeholder="Remote, Austin TX">
+
+    <label for="min_salary">Minimum salary</label>
+    <input type="number" id="min_salary" name="min_salary" value="{{ profile.min_salary or '' }}">
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="remote_only" name="remote_only" {{ 'checked' if profile.remote_only else '' }}>
+      <label for="remote_only" style="margin:0;">Remote only</label>
+    </div>
+
+    <label style="margin-top:24px;">Skills</label>
+    <div id="skillRows">
+      {% for s in skills %}
+        <div class="skill-row">
+          <input type="text" name="skill_name" value="{{ s.skill_name }}" placeholder="Python">
+          <input type="number" name="skill_years" value="{{ s.years_experience or '' }}" placeholder="years" step="0.5">
+        </div>
+      {% endfor %}
+      <div class="skill-row">
+        <input type="text" name="skill_name" placeholder="Python">
+        <input type="number" name="skill_years" placeholder="years" step="0.5">
+      </div>
+    </div>
+    <button type="button" class="ghost" id="addSkill" style="margin-top:6px;">+ add skill</button>
+
+    <div style="margin-top:24px;">
+      <button type="submit">Save profile</button>
+    </div>
+  </form>
+
+  <script>
+    document.getElementById('addSkill').addEventListener('click', () => {
+      const row = document.createElement('div');
+      row.className = 'skill-row';
+      row.innerHTML = `<input type="text" name="skill_name" placeholder="Skill"><input type="number" name="skill_years" placeholder="years" step="0.5">`;
+      document.getElementById('skillRows').appendChild(row);
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Pipeline — Job Copilot{% endblock %}
+{% block content %}
+  <div class="page-eyebrow">Pipeline</div>
+  <h1>Your applications</h1>
+
+  {% if stale %}
+    <div class="stale-banner">
+      <strong>{{ stale|length }} application{{ 's' if stale|length != 1 else '' }}</strong> haven't been updated in over a week —
+      {% for s in stale %}{{ s.title }} at {{ s.company }}{{ ', ' if not loop.last else '' }}{% endfor %}.
+    </div>
+  {% endif %}
+
+  <div class="filter-bar">
+    <a href="{{ url_for('pipeline') }}" class="{{ 'active' if not stage_filter else '' }}">all</a>
+    {% for s in ['saved','applied','interviewing','offer','rejected'] %}
+      <a href="{{ url_for('pipeline', stage=s) }}" class="{{ 'active' if stage_filter == s else '' }}">{{ s }}</a>
+    {% endfor %}
+  </div>
+
+  {% if jobs %}
+    {% for j in jobs %}
+      <div class="stub">
+        <div class="stub-main">
+          <div class="stub-title">{{ j.title }}</div>
+          <div class="stub-sub">{{ j.company or 'Unknown company' }}{% if j.location %} · {{ j.location }}{% endif %}</div>
+          <div class="stub-meta">
+            {% if j.remote %}<span class="tag">remote</span>{% endif %}
+            <span class="tag mono">{{ j.job_id }}</span>
+            {% if j.url %}<a href="{{ j.url }}" target="_blank" style="font-size:12px;">listing ↗</a>{% endif %}
+          </div>
+          <details style="margin-top:10px;">
+            <summary style="cursor:pointer; font-size:13px; color:var(--teal-dark);">Add a note / follow-up</summary>
+            <form class="note-form" data-job="{{ j.job_id }}" style="margin-top:8px;">
+              <textarea name="note_text" placeholder="Interview scheduled, recruiter said..." rows="2"></textarea>
+              <label style="margin-top:6px;">Follow-up date (optional)</label>
+              <input type="datetime-local" name="follow_up_at">
+              <div style="margin-top:8px;"><button type="submit">Save note</button></div>
+            </form>
+          </details>
+        </div>
+        <div style="text-align:right;">
+          <div class="stage-tag stage-{{ j.stage }}">{{ j.stage }}</div>
+          <select class="stage-select" data-job="{{ j.job_id }}" style="margin-top:10px; font-size:12px;">
+            {% for s in ['saved','applied','interviewing','offer','rejected'] %}
+              <option value="{{ s }}" {{ 'selected' if s == j.stage else '' }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">Nothing here yet — ask the agent to find and save some roles from the Chat tab.</div>
+  {% endif %}
+
+  <script>
+    document.querySelectorAll('.stage-select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        await fetch('/pipeline/stage', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: `job_id=${encodeURIComponent(sel.dataset.job)}&new_stage=${encodeURIComponent(sel.value)}`
+        });
+        location.reload();
+      });
+    });
+
+    document.querySelectorAll('.note-form').forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        fd.append('job_id', form.dataset.job);
+        await fetch('/pipeline/note', { method: 'POST', body: fd });
+        location.reload();
+      });
+    });
+  </script>
+{% endblock %}

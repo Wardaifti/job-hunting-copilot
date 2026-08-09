@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Chat — Job Copilot{% endblock %}
+{% block content %}
+  <div class="page-eyebrow">Agent</div>
+  <h1>What are you looking for?</h1>
+  <p style="color:var(--slate); margin-top:0;">Describe a role, ask about a match, or manage your pipeline — the agent can search, save, draft, and track for you.</p>
+
+  <div class="suggestions">
+    <button type="button" onclick="sendSuggestion('Find me remote backend engineer roles that don\'t require 5+ years of Kubernetes experience')">Find remote backend roles</button>
+    <button type="button" onclick="sendSuggestion('What jobs have I saved so far?')">Show my pipeline</button>
+    <button type="button" onclick="sendSuggestion('Do I have any applications I haven\'t followed up on?')">Check for stale applications</button>
+  </div>
+
+  <div class="chat-window">
+    <div class="chat-log" id="chatLog">
+      <div class="msg assistant">Hi — tell me what kind of role you're after, or paste a job ID to save, explain, or draft materials for.</div>
+    </div>
+    <form class="chat-form" id="chatForm">
+      <input type="text" id="chatInput" placeholder="e.g. Save that first one and draft a cover letter" autocomplete="off">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script>
+    const log = document.getElementById('chatLog');
+    const form = document.getElementById('chatForm');
+    const input = document.getElementById('chatInput');
+
+    function addMsg(role, text) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + role;
+      div.textContent = text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function addActions(actions) {
+      if (!actions || !actions.length) return;
+      const div = document.createElement('div');
+      div.className = 'msg actions';
+      div.textContent = 'ran: ' + actions.map(a => a.tool + (a.ok ? '' : ' (failed)')).join(', ');
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function send(message) {
+      if (!message.trim()) return;
+      addMsg('user', message);
+      input.value = '';
+      const thinking = document.createElement('div');
+      thinking.className = 'msg assistant';
+      thinking.textContent = '…';
+      log.appendChild(thinking);
+      log.scrollTop = log.scrollHeight;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message})
+        });
+        const data = await res.json();
+        thinking.remove();
+        if (data.error) {
+          addMsg('assistant', 'Error: ' + data.error);
+        } else {
+          addMsg('assistant', data.reply);
+          addActions(data.actions);
+        }
+      } catch (err) {
+        thinking.remove();
+        addMsg('assistant', 'Network error — please try again.');
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      send(input.value);
+    });
+
+    function sendSuggestion(text) { send(text); }
+  </script>
+{% endblock %}
