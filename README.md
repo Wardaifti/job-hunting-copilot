@@ -1,8 +1,9 @@
-#🧭 AI Job Hunting Copilot
+# 🧭 AI Job Hunting Copilot
 
 Capstone project — DataExpert.io AI Data Engineering Bootcamp
 
-Live app: https://job-hunting-copilot-7474644487245197.aws.databricksapps.com Repo: https://github.com/Wardaifti/job-hunting-copilot
+Live app: https://job-hunting-copilot-7474644487245197.aws.databricksapps.com 
+Repo: https://github.com/Wardaifti/job-hunting-copilot
 
 An AI-powered job search assistant. Users describe their skills and target roles, then ask an agent to find matching live job postings, explain why a posting is (or isn't) a good fit, save it to a pipeline, draft tailored application material, and track follow-ups — all backed by Lakebase.
 
@@ -38,11 +39,11 @@ Data pipeline (Spark) + third-party API
 
 notebooks/ingest_remoteok_jobs.py pulls live listings from the RemoteOK API (no key required), loads them into a Spark DataFrame, and does the real transformation work there: dedupes by job id, drops listings with no description, derives a remote boolean from the location string, casts salary fields, parses posting dates. The final write to Lakebase happens via psycopg2 from the driver (not spark.write.jdbc, which is unreliable against this Lakebase instance, and not executor-side foreachPartition, since executors don't carry Databricks Workspace auth needed to fetch the Lakebase credential).
 
-Unstructured data processing (RAG)
+# Unstructured data processing (RAG)
 
 notebooks/ingest_job_embeddings.py chunks each job posting's free-text description (800-char sliding window, 100-char overlap) and embeds each chunk via the Databricks Foundation Model API (databricks-gte-large-en, 1024 dimensions) — no local model download needed, so no risk of a cluster OOM/hang from loading a multi-GB model. Chunks are written to job_embeddings with an HNSW index (vector_cosine_ops) for fast cosine-similarity search.
 
-AI agent — tools
+#   AI agent — tools
 
 The agent (agent.py) runs an OpenAI-style tool-calling loop (up to 4 rounds per turn) against databricks-meta-llama-3-3-70b-instruct. Its tools (implemented in agent_tools.py) are the agent's actual "hands" — plain Python functions that read from and write to Lakebase:
 
@@ -58,7 +59,7 @@ stale_applications	read	Surfaces applied/interviewing jobs untouched for N days 
 
 The system prompt instructs the agent to always use tools (never invent job data or match explanations), summarize search results in plain language, and confirm writes explicitly.
 
-Frontend (Databricks App)
+# Frontend (Databricks App)
 
 Flask app (app.py) with three tabs, styled with a custom ticket-stub/paper-and-teal design (static/style.css) rather than default Bootstrap:
 
@@ -68,11 +69,11 @@ Profile — headline, summary, target roles/locations, min salary, remote-only t
 
 Uses a single demo user (DEMO_USER_EMAIL env var) — real login/multi-tenant auth was out of scope for this capstone.
 
-Lakebase schema
+# Lakebase schema
 
 9 tables (schema.sql): users, profiles, skills, job_postings, job_embeddings, saved_jobs, applications, interview_notes, contacts. saved_jobs is the pipeline's spine — applications and interview_notes both hang off saved_job_id.
 
-#Setup
+# Setup
 1. Lakebase
 
 Create a Lakebase instance, add a native-password role, run schema.sql, then grant the role access:
@@ -89,7 +90,7 @@ Run notebooks/ingest_remoteok_jobs.py (Spark-attached cluster), then notebooks/i
 
 Deploy app.py as a Databricks App. Attach a Database resource in the Apps UI (Resources → Add resource → Database → your Lakebase instance) — lakebase.py uses this to auto-fetch a short-lived Postgres credential for the app's own service principal via w.postgres.generate_database_credential(...), which sidesteps a Free Edition limitation where app service principals can't be granted secret scope ACLs. Then grant that service principal the same table access as step 1 (its identity is the app's DATABRICKS_CLIENT_ID, visible in the app's Environment tab).
 
-#Reflection
+# Reflection
 
 What was the most difficult part? Getting Lakebase authentication right for a deployed app on Free Edition — the secret-scope-ACL pattern that worked for notebooks doesn't work for app service principals there, so lakebase.py had to fall back to exchanging the app's own identity for a short-lived credential via its attached Database resource instead.
 
@@ -97,7 +98,7 @@ How is Lakebase different from storing this data in a traditional analytics tabl
 
 What feature would you add next? A scheduled Databricks Workflow to re-run the sync + embedding pipeline automatically, and adding Adzuna as a second job source — the RemoteOK feed alone skews web-dev-heavy, which limits match quality for other role types (e.g. data science).
 
-#Known limitations
+# Known limitations
 Match relevance depends on what's in the ~100-listing RemoteOK snapshot at sync time; underrepresented role types get weaker "best available" matches. This is a data-coverage limitation, not a retrieval bug.
 Single demo-user model — no real auth (out of scope for this capstone).
 Only RemoteOK is wired up; Adzuna/USAJobs were not integrated.
